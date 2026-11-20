@@ -6,19 +6,19 @@ on:
       tag_name:
         description: 'Release Tag (leave empty for auto-generated timestamp tag)'
         required: false
+        type: string
         default: ''
   push:
     branches:
       - 'clean-*'
       - 'main'
 
-permissions:
-  contents: write
-
 jobs:
   build_release:
     name: Build Arm64 Release APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -46,7 +46,15 @@ jobs:
       - name: Generate Keystore for Signing
         run: |
           mkdir -p ~/.android
-          keytool -genkey -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Arm64 FOSS Release APK
         run: |
@@ -68,7 +76,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          INPUT_TAG="${{ github.event.inputs.tag_name }}"
+          INPUT_TAG="${{ inputs.tag_name }}"
           if [ -z "$INPUT_TAG" ]; then
             TAG="v8.4.3-deezer-$(date +'%Y%m%d-%H%M')"
           else
