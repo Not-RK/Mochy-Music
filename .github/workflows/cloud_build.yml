@@ -2,23 +2,18 @@ name: Build Mochy Release APK
 
 on:
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release Tag (leave empty for auto-generated timestamp tag)'
-        required: false
-        type: string
-        default: ''
   push:
     branches:
-      - 'clean-*'
-      - 'main'
+      - clean-v8.4.2.2
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   build_release:
     name: Build Arm64 Release APK
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -60,10 +55,23 @@ jobs:
         run: |
           ./gradlew :app:assembleArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
 
-      - name: Rename APK for Release
+      - name: Prepare APK and Notes
         run: |
           cd app/build/outputs/apk/arm64Foss/release
-          mv *.apk Mochy-Music-v8.4.3-arm64-Deezer.apk
+          cp *.apk Mochy-Music-v8.4.3-arm64-Deezer.apk
+          cat << 'EOF' > release_notes.md
+          ## 🎵 Mochy Music v8.4.3 - Deezer Edition
+          Official Upstream Sync + Lossless Deezer + Jitter-Free Audio
+
+          ### ✨ What's Included:
+          - **Upstream v8.4.3 Sync**: Exact parity with official upstream release (tag `mochy-8.4.3`, commit `a5bc898b`).
+          - **Native Deezer Source Module**: Native FLAC (lossless) & 320kbps MP3 streaming with Blowfish CBC 2048-byte stripe decryption and local stream loopback server.
+          - **Geo-Unblock Proxy Support**: Built-in selectable proxies (UK 1, UK 2, RU 1, RU 2, MD) enabling Deezer streaming in unsupported countries like India.
+          - **Micro-Stutter / Audio Jitter Fix**: Stripped heavy debug logging and logcat spam for smooth background playback.
+          - **Minimal Default Setup**: Default modules are **Monochrome** and **Deezer** only.
+          - **Cleaned Integrations**: Removed non-working Last.fm & Libre.fm rows from the Integrations UI.
+          - **Architecture**: `arm64-v8a` (Optimized for modern Android devices).
+          EOF
 
       - name: Upload Arm64 Release Artifact
         uses: actions/upload-artifact@v4
@@ -76,24 +84,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          INPUT_TAG="${{ inputs.tag_name }}"
-          if [ -z "$INPUT_TAG" ]; then
-            TAG="v8.4.3-deezer-$(date +'%Y%m%d-%H%M')"
-          else
-            TAG="$INPUT_TAG"
-          fi
-          
-          gh release create "$TAG" \
-            app/build/outputs/apk/arm64Foss/release/Mochy-Music-v8.4.3-arm64-Deezer.apk \
-            --title "Mochy Music v8.4.3 (Deezer Edition - $TAG)" \
-            --notes "## 🎵 Mochy Music v8.4.3 - Deezer Edition
-Official Upstream Sync + Lossless Deezer + Jitter-Free Audio
-
-### ✨ What's Included:
-- **Upstream v8.4.3 Sync**: Exact parity with official upstream release (tag \`mochy-8.4.3\`, commit \`a5bc898b\`).
-- **Native Deezer Source Module**: Native FLAC (lossless) & 320kbps MP3 streaming with Blowfish CBC 2048-byte stripe decryption and local stream loopback server.
-- **Geo-Unblock Proxy Support**: Built-in selectable proxies (UK 1, UK 2, RU 1, RU 2, MD) enabling Deezer streaming in unsupported countries like India.
-- **Micro-Stutter / Audio Jitter Fix**: Stripped heavy debug logging and logcat spam for smooth background playback.
-- **Minimal Default Setup**: Default modules are **Monochrome** and **Deezer** only.
-- **Cleaned Integrations**: Removed non-working Last.fm & Libre.fm rows from the Integrations UI.
-- **Architecture**: \`arm64-v8a\` (Optimized for modern Android devices)."
+          cd app/build/outputs/apk/arm64Foss/release
+          gh release create "v8.4.3-deezer" \
+            Mochy-Music-v8.4.3-arm64-Deezer.apk \
+            --title "Mochy Music v8.4.3 (Deezer Edition)" \
+            --notes-file release_notes.md \
+            --clobber
