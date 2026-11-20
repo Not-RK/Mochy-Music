@@ -75,7 +75,15 @@
 
 1. Grab the latest APK from **[Releases](https://github.com/Not-RK/Mochy-Music/releases/latest)** (`Mochy-Resona-*.apk`).
 2. Install on Android 8.0+.
-3. *(Optional)*: In **Settings → Modules → Deezer**, select your preferred proxy (e.g. `UK 1` or `UK 2`).
+
+---
+
+## 🎧 How to Configure Deezer (FLAC Lossless)
+
+1. Go to **Settings → Modules → Deezer**.
+2. **ARL Cookie for FLAC**: Paste your Deezer `arl` cookie into the ARL token field to unlock genuine Hi-Fi Lossless (FLAC 1411 kbps) streaming.
+3. **Regional Proxy**: If you are in India or any unsupported country, select a proxy from the dropdown (e.g. `UK 1` or `UK 2`).
+4. Set **Deezer** as your preferred source, search any track, and enjoy crystal-clear audio!
 
 ---
 
