@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - clean-v8.4.2.2
-      - main
 
 permissions:
   contents: write
@@ -52,13 +51,15 @@ jobs:
             -dname "CN=Android Debug,O=Android,C=US"
 
       - name: Build Arm64 FOSS Release APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3584M -Dkotlin.daemon.jvm.options=-Xmx2048M -XX:+UseParallelGC -Dorg.gradle.workers.max=2"
         run: |
           ./gradlew :app:assembleArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
 
       - name: Prepare APK and Notes
         run: |
           cd app/build/outputs/apk/arm64Foss/release
-          cp *.apk Mochy-Music-v8.4.3-arm64-Deezer.apk
+          cp app-arm64-foss-release.apk Mochy-Music-v8.4.3-arm64-Deezer.apk || cp *.apk Mochy-Music-v8.4.3-arm64-Deezer.apk
           cat << 'EOF' > release_notes.md
           ## 🎵 Mochy Music v8.4.3 - Deezer Edition
           Official Upstream Sync + Lossless Deezer + Jitter-Free Audio
