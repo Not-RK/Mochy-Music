@@ -272,8 +272,8 @@ enum class CrossmixMode {
     CROSSMIX,
 }
 
-// crossmix unless someone picked otherwise: the old default was a plain 5 s crossfade that never mixed anything
-val DefaultTransitionMode = CrossmixMode.CROSSMIX
+// Default transition is clean Morphe-style manual crossfade (no buggy tempo stretching)
+val DefaultTransitionMode = CrossmixMode.MANUAL_CROSSFADE
 
 // the transition that really plays: the saved pick, then the old crossfade switch for those who set it before modes existed, then crossmix
 fun transitionModeOf(prefs: Preferences): CrossmixMode =

@@ -8,7 +8,8 @@
 package com.mochyy.mochymusic.ui.screens.settings
 
 import com.mochyy.mochymusic.ui.component.BlurEffectCache
-import com.mochyy.mochymusic.ui.component.rememberDeviceTilt
+// Gyroscope/Tilt disabled on profile card to preserve battery and stop sensor listener
+// import com.mochyy.mochymusic.ui.component.rememberDeviceTilt
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -292,7 +293,7 @@ fun ProfileScreen(navController: NavController) {
     val tiltX = remember { Animatable(0f) }
     val tiltY = remember { Animatable(0f) }
     var tiltTarget by remember { mutableStateOf(Offset.Zero) }
-    val deviceTilt = rememberDeviceTilt()
+    // Gyroscope tilt disabled for username card to save battery & stop sensor usage
     var scratchKey by remember { mutableIntStateOf(0) }
     val scratch = remember(scratchKey) { ScratchState() }
     val scan = remember { Animatable(0f) }
@@ -629,10 +630,8 @@ fun ProfileScreen(navController: NavController) {
                                         val live = stage == HeaderStage.Collapsed || stage == HeaderStage.Pulling
                                         val sway = if (live) 1f else 0f
                                         val t = time.sway
-                                        // the phone's lean too; half as much on the back, so scratching stays steady
-                                        val lean = if (flip.value >= 0.5f) 0.5f else 1f
-                                        val liveY = flip.value * 180f + tiltY.value + deviceTilt.rotationY * lean + sway * sin(t * 0.9f) * 3f
-                                        val liveX = tiltX.value + deviceTilt.rotationX * lean + sway * cos(t * 0.7f) * 2f - (if (stage == HeaderStage.Pulling) expand * 14f else 0f)
+                                        val liveY = flip.value * 180f + tiltY.value + sway * sin(t * 0.9f) * 3f
+                                        val liveX = tiltX.value + sway * cos(t * 0.7f) * 2f - (if (stage == HeaderStage.Pulling) expand * 14f else 0f)
                                         leanX = lerpF(leanX, liveX, follow)
                                         leanY = lerpF(leanY, liveY, follow)
                                     }

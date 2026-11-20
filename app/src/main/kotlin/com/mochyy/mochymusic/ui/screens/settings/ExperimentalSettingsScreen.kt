@@ -26,11 +26,6 @@ import com.mochyy.mochymusic.constants.CrossmixTestToolsKey
 import com.mochyy.mochymusic.constants.ForcePlaybackKey
 import com.mochyy.mochymusic.constants.ShowStreamSourceToastKey
 import com.mochyy.mochymusic.constants.ForceYtBackdropBlur1500Key
-import com.mochyy.mochymusic.constants.HapticFocus
-import com.mochyy.mochymusic.constants.HapticFocusKey
-import com.mochyy.mochymusic.constants.HapticSensitivity
-import com.mochyy.mochymusic.constants.MusicHapticsEnabledKey
-import com.mochyy.mochymusic.constants.MusicHapticsSensitivityKey
 import com.mochyy.mochymusic.constants.SetupCompletedKey
 import com.mochyy.mochymusic.ui.component.SettingsGroup
 import com.mochyy.mochymusic.ui.component.SettingsGroupStyle
@@ -44,9 +39,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExperimentalSettingsScreen(navController: NavController) {
-    val (musicHapticsEnabled, onMusicHapticsEnabledChange) = rememberPreference(MusicHapticsEnabledKey, defaultValue = false)
-    val (musicHapticsSensitivity, onMusicHapticsSensitivityChange) = rememberEnumPreference(MusicHapticsSensitivityKey, defaultValue = HapticSensitivity.MEDIUM)
-    val (hapticFocus, onHapticFocusChange) = rememberEnumPreference(HapticFocusKey, defaultValue = HapticFocus.VIBE)
     val (showBigDiscStyles, onShowBigDiscStylesChange) = rememberPreference(
         com.mochyy.mochymusic.constants.ShowBigDiscStylesKey,
         defaultValue = false,
@@ -231,73 +223,6 @@ fun ExperimentalSettingsScreen(navController: NavController) {
                                 AppSwitch(
                                     checked = showBigDiscStyles,
                                     onCheckedChange = onShowBigDiscStylesChange,
-                                )
-                            }
-                        )
-                    )
-                    add(
-                        SettingsItem(
-                            title = { Text(stringResource(R.string.experimental_music_haptics_title)) },
-                            highlightKey = "Music haptics",
-                            descriptionText = stringResource(R.string.experimental_music_haptics_desc),
-                            icon = painterResource(R.drawable.music_note),
-                            iconShape = androidx.compose.foundation.shape.CircleShape,
-                            onClick = { onMusicHapticsEnabledChange(!musicHapticsEnabled) },
-                            trailingContent = {
-                                AppSwitch(checked = musicHapticsEnabled, onCheckedChange = onMusicHapticsEnabledChange)
-                            }
-                        )
-                    )
-                    add(
-                        SettingsItem(
-                            title = { Text(stringResource(R.string.experimental_haptic_sensitivity_title)) },
-                            description = {
-                                Text(
-                                    when (musicHapticsSensitivity) {
-                                        HapticSensitivity.LOW -> stringResource(R.string.experimental_haptic_sensitivity_low)
-                                        HapticSensitivity.MEDIUM -> stringResource(R.string.experimental_haptic_sensitivity_medium)
-                                        HapticSensitivity.HIGH -> stringResource(R.string.experimental_haptic_sensitivity_high)
-                                    }
-                                )
-                            },
-                            icon = painterResource(R.drawable.sliders),
-                            iconShape = androidx.compose.foundation.shape.CircleShape,
-                            enabled = musicHapticsEnabled,
-                            onClick = {
-                                onMusicHapticsSensitivityChange(
-                                    when (musicHapticsSensitivity) {
-                                        HapticSensitivity.LOW -> HapticSensitivity.MEDIUM
-                                        HapticSensitivity.MEDIUM -> HapticSensitivity.HIGH
-                                        HapticSensitivity.HIGH -> HapticSensitivity.LOW
-                                    }
-                                )
-                            }
-                        )
-                    )
-                    add(
-                        SettingsItem(
-                            title = { Text(stringResource(R.string.experimental_haptic_focus_title)) },
-                            description = {
-                                Text(
-                                    when (hapticFocus) {
-                                        HapticFocus.BALANCE -> stringResource(R.string.experimental_haptic_focus_balance)
-                                        HapticFocus.VOCAL -> stringResource(R.string.experimental_haptic_focus_vocal)
-                                        HapticFocus.VIBE -> stringResource(R.string.experimental_haptic_focus_vibe)
-                                        HapticFocus.BASS -> stringResource(R.string.experimental_haptic_focus_bass)
-                                    }
-                                )
-                            },
-                            icon = painterResource(R.drawable.equalizer),
-                            iconShape = androidx.compose.foundation.shape.CircleShape,
-                            enabled = musicHapticsEnabled,
-                            onClick = {
-                                onHapticFocusChange(
-                                    when (hapticFocus) {
-                                        HapticFocus.BALANCE -> HapticFocus.VOCAL
-                                        HapticFocus.VOCAL -> HapticFocus.VIBE
-                                        HapticFocus.VIBE -> HapticFocus.BASS
-                                        HapticFocus.BASS -> HapticFocus.BALANCE
-                                    }
                                 )
                             }
                         )

@@ -208,7 +208,7 @@ import com.mochyy.mochymusic.models.PersistPlayerState
 import com.mochyy.mochymusic.models.PersistQueue
 import com.mochyy.mochymusic.models.toMediaMetadata
 import com.mochyy.mochymusic.playback.audio.SilenceDetectorAudioProcessor
-import com.mochyy.mochymusic.playback.audio.HapticAudioProcessor
+// HapticAudioProcessor removed for performance & battery savings
 import com.mochyy.mochymusic.playback.audio.CrossmixClockSink
 import com.mochyy.mochymusic.playback.audio.CrossmixTransitionAudioProcessor
 import com.mochyy.mochymusic.playback.audio.pass.LabSound
@@ -220,12 +220,6 @@ import com.mochyy.mochymusic.playback.audio.pass.clearPassBlockers
 import com.mochyy.mochymusic.playback.audio.pass.PassBlockersBefore
 import com.mochyy.mochymusic.playback.audio.pass.restorePassBlockers
 import com.mochyy.mochymusic.playback.audio.pass.passBlockersOf
-import com.mochyy.mochymusic.constants.MusicHapticsEnabledKey
-import com.mochyy.mochymusic.constants.MusicHapticsSensitivityKey
-import com.mochyy.mochymusic.constants.HapticSensitivity
-import android.os.Vibrator
-import android.os.VibratorManager
-import android.os.VibrationEffect
 import com.mochyy.mochymusic.playback.queues.EmptyQueue
 import com.mochyy.mochymusic.playback.queues.ListQueue
 import com.mochyy.mochymusic.playback.queues.Queue
@@ -707,7 +701,6 @@ class MusicService :
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var eightDReverb: PresetReverb? = null
     private var eightDReverbSessionId = C.AUDIO_SESSION_ID_UNSET
-    private lateinit var hapticAudioProcessor: HapticAudioProcessor
 
     /** When a play counts for Last.fm and Libre.fm; the scrobbler skips services that aren't signed in. */
     private val scrobbleTimer by lazy { ScrobbleTimer({ scope }, scrobbler) }
@@ -831,29 +824,6 @@ class MusicService :
         sleepTimer = SleepTimer(scope, player)
         player.addListener(sleepTimer)
 
-        scope.launch {
-            dataStore.data.map { it[MusicHapticsEnabledKey] ?: false }
-                .distinctUntilChanged()
-                .collect { enabled ->
-                    hapticAudioProcessor.enabled = enabled
-                }
-        }
-
-        scope.launch {
-            dataStore.data.map { it[MusicHapticsSensitivityKey]?.toEnum(HapticSensitivity.MEDIUM) ?: HapticSensitivity.MEDIUM }
-                .distinctUntilChanged()
-                .collect { sensitivity ->
-                    hapticAudioProcessor.sensitivity = sensitivity
-                }
-        }
-
-        scope.launch {
-            dataStore.data.map { it[com.mochyy.mochymusic.constants.HapticFocusKey]?.toEnum(com.mochyy.mochymusic.constants.HapticFocus.VIBE) ?: com.mochyy.mochymusic.constants.HapticFocus.VIBE }
-                .distinctUntilChanged()
-                .collect { focus ->
-                    hapticAudioProcessor.focus = focus
-                }
-        }
 
         playerInitialized.value = true
         Timber.tag(TAG).d("Player successfully initialized")
@@ -1371,57 +1341,6 @@ class MusicService :
         val spectrum = com.mochyy.mochymusic.playback.audio.AudioSpectrum()
         val inspector = StreamInspector()
 
-        val hapticVibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-            vibratorManager.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-        }
-
-        hapticAudioProcessor = HapticAudioProcessor { amplitude, isBassKick ->
-            scope.launch(Dispatchers.Default) {
-                delay(150)
-                try {
-                    if (hapticVibrator.hasVibrator()) {
-                        val scale = (amplitude / 255f).coerceIn(0.01f, 1f)
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            if (isBassKick && hapticVibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
-
-                                val effect = VibrationEffect.startComposition()
-                                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, scale)
-                                    .compose()
-                                hapticVibrator.vibrate(effect)
-                            } else if (hapticVibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)) {
-
-                                val effect = VibrationEffect.startComposition()
-                                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK, scale)
-                                    .compose()
-                                hapticVibrator.vibrate(effect)
-                            } else if (hapticVibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)) {
-                                val effect = VibrationEffect.startComposition()
-                                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, scale)
-                                    .compose()
-                                hapticVibrator.vibrate(effect)
-                            } else if (hapticVibrator.hasAmplitudeControl()) {
-                                hapticVibrator.vibrate(VibrationEffect.createOneShot(20, amplitude))
-                            }
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && hapticVibrator.hasAmplitudeControl()) {
-                            hapticVibrator.vibrate(VibrationEffect.createOneShot(20, amplitude))
-                        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && isBassKick) {
-                            // Android 7 has no VibrationEffect, so it gets a plain buzz on the kick only.
-                            // Newer phones without amplitude control stay silent, as they always have.
-                            @Suppress("DEPRECATION")
-                            hapticVibrator.vibrate(20)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Timber.e(e, "Error processing haptics")
-                }
-            }
-        }
-
         runBlocking {
             val skipSilence = dataStore.get(SkipSilenceKey, false)
             val instantSkip = dataStore.get(SkipSilenceInstantKey, false)
@@ -1430,7 +1349,7 @@ class MusicService :
 
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(createMediaSourceFactory())
-            .setRenderersFactory(createRenderersFactory(eqProcessor, fxProcessors, silenceProcessor, hapticAudioProcessor, crossmixProcessor, replayGain, spectrum, inspector))
+            .setRenderersFactory(createRenderersFactory(eqProcessor, fxProcessors, silenceProcessor, crossmixProcessor, replayGain, spectrum, inspector))
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setAudioAttributes(
@@ -1443,8 +1362,8 @@ class MusicService :
             .setSeekBackIncrementMs(5000)
             .setSeekForwardIncrementMs(5000)
             .setDeviceVolumeControlEnabled(true)
-            // wake the playback loop when the audio buffer needs more, not every 10 ms: it was a third of a core in the background
-            .experimentalSetDynamicSchedulingEnabled(true)
+            // Dynamic scheduling disabled to prevent lockscreen audio buffer underruns and crackling
+            .experimentalSetDynamicSchedulingEnabled(false)
             .build()
 
         player.addListener(object : Player.Listener {
@@ -4317,7 +4236,6 @@ class MusicService :
         eqProcessor: CustomEqualizerAudioProcessor,
         fxProcessors: Array<androidx.media3.common.audio.AudioProcessor>,
         silenceProcessor: SilenceDetectorAudioProcessor,
-        hapticProcessor: HapticAudioProcessor,
         crossmixProcessor: CrossmixTransitionAudioProcessor,
         replayGain: com.mochyy.mochymusic.eq.audio.ReplayGainTags,
         spectrum: com.mochyy.mochymusic.playback.audio.AudioSpectrum,
@@ -4346,7 +4264,6 @@ class MusicService :
                             eqProcessor,
                             *fxProcessors,
                             silenceProcessor,
-                            hapticProcessor,
                             crossmixProcessor,
                         ),
                         SilenceSkippingAudioProcessor(2_000_000, 20_000, 256),
@@ -4770,11 +4687,8 @@ class MusicService :
     }
 
     private fun scheduleCrossfade() {
-        // crossmix plans its own hand-overs, but not mid-blend: standing down then wiped the new song's effect, so it's asked again once the blend is over
-        if (!isCrossfading) crossmixDirector.schedule()
         crossfadeTriggerJob?.cancel()
         crossfadeTriggerJob = null
-        if (crossmixMode == CrossmixMode.CROSSMIX) return
         if (!crossfadeEnabled || player.duration == C.TIME_UNSET || player.duration <= crossfadeDuration) return
         if (crossfadeGapless && isNextItemGapless()) return
         // repeat one goes straight round on the same player; crossfaded into itself, the second time round played silent
@@ -4803,9 +4717,9 @@ class MusicService :
         return current.albumTitle != null && current.albumTitle == next.albumTitle
     }
 
-    /** the plain fixed-length crossfade (Auto and Manual): two equal-power volume ramps */
+    /** the clean Morphe-style dual-player equal-power crossfade */
     private fun startCrossfade() {
-        if (isCrossfading || crossmixDirector.isTransitioning) return
+        if (isCrossfading) return
         val targetIndex = player.nextMediaItemIndex
         if (targetIndex == C.INDEX_UNSET) return
         crossfadeTo(targetIndex, crossfadeDuration.toLong())
@@ -5068,26 +4982,16 @@ class MusicService :
         }
     }
 
-    // the two volume ramps of a crossfade, stepped every frame by the time the new song has really played; [incomingFx] is the new song's layered effect, armed before it started
+    // clean Morphe/Spotify style dual-player equal-power crossfade (sin/cos curve, zero DSP distortion)
     private suspend fun rampCrossfade(durationMs: Long, skipCurve: Boolean, incomingFx: CrossmixTransitionAudioProcessor?) {
         val startVolume = runCatching { fadingPlayer?.volume ?: 1f }.getOrDefault(1f)
-        // the old song carries on as it was until the new one is really heard, so a slow start never leaves a gap;
-        // a new song that never starts (a dead link, paused before its first sound) only gets so long
+        // the old song carries on as it was until the new one is really heard, so a slow start never leaves a gap
         val started = withTimeoutOrNull(CrossfadeStartWaitMs) {
             while (currentCoroutineContext().isActive && !player.isPlaying) delay(CrossfadeFrameMs)
             true
         }
-        // still silent after the wait: the ramp below would sit at zero heard time forever, so the cleanup takes over now
         if (started == null) return
-        // the new song in a format the renderer can't mix plays by untouched, so its volume brings it in instead
-        val inFx = incomingFx?.takeIf { it.canRender && !it.idle }
-        if (inFx == null) incomingFx?.clear()
-        // the old song's effect starts the moment the new one is heard, so both sides move on one clock for the whole length
-        val outFx = fadingPlayer?.takeIf { skipCurve }?.let { armBlend(it, CrossmixRole.Outgoing, durationMs) }
-        // stepped every frame by the time actually played: twenty fixed steps were heard as the volume jumping.
-        // Timed by the new song's own position, which is what's really coming out of the speaker: the wall
-        // clock started as soon as isPlaying flipped, while the audio track was still filling, so the new
-        // song came in further up the ramp than the timer said
+
         var heardMs = 0L
         var lastClock = android.os.SystemClock.elapsedRealtime()
         var lastPosition = player.currentPosition
@@ -5099,9 +5003,7 @@ class MusicService :
             val movedMs = position - lastPosition
             val speed = player.playbackParameters.speed.takeIf { it > 0f } ?: 1f
             heardMs += when {
-                // the ordinary case: as far as the song really got, at the speed it plays at
                 movedMs in 0..(wallMs * 4 + 250) -> (movedMs / speed).toLong()
-                // a seek or another song picked mid-fade: the clock carries it on; a pause holds both songs where they are
                 player.isPlaying -> wallMs
                 else -> 0L
             }
@@ -5109,29 +5011,15 @@ class MusicService :
             lastPosition = position
             val progress = (heardMs.toFloat() / durationMs).coerceIn(0f, 1f)
             val angle = progress * Math.PI / 2.0
-            // a skip's own effect does the fading on its side; without one a skip eases on equal-gain s-curves, the end-of-song crossfade on equal-power ramps
-            val inGain = when {
-                inFx != null -> 1.0
-                skipCurve -> kotlin.math.sin(angle).let { it * it }
-                else -> kotlin.math.sin(angle)
-            }
-            val outGain = when {
-                // held so the effect is heard, then the volume takes its last echoes away
-                outFx != null -> tailFade(progress).toDouble()
-                skipCurve -> kotlin.math.cos(angle).let { it * it }
-                else -> kotlin.math.cos(angle)
-            }
+            val inGain = kotlin.math.sin(angle)
+            val outGain = kotlin.math.cos(angle)
             try {
-                // the new song fades up to the volume it should be at now: started from the old
-                // one's, a fade begun while muted or ducked ended at 0 or a fifth, and stayed
-                player.volume = targetVolume() * inGain.toFloat()
-                fadingPlayer?.volume = startVolume * outGain.toFloat()
+                player.volume = (targetVolume() * inGain.toFloat()).coerceIn(0f, 1f)
+                fadingPlayer?.volume = (startVolume * outGain.toFloat()).coerceIn(0f, 1f)
             } catch (e: Exception) {
                 break
             }
         }
-        // the new song steps out of its effect once the blend is over
-        inFx?.finish()
     }
 
     // one side of a blended skip's layered effect; null with no effect picked or a renderer that can't mix this song

@@ -259,7 +259,6 @@ private val SettingsIndex = listOf(
     SettingsEntry("Device integration", "Import & sync", com.mochyy.mochymusic.ui.screens.devices.DeviceIntegrationRoute, "tv television android tv google tv phone tablet car head unit pair link sync stream downloads big screen remote control devices"),
     SettingsEntry("Import & sync", "Experimental", "experimental_settings", "import spotify apple music deezer tidal tunemymusic csv youtube sync export backup transfer"),
     SettingsEntry("Big disc cover styles", "Experimental", "experimental_settings", "disc vinyl cover"),
-    SettingsEntry("Music haptics", "Experimental", "experimental_settings", "vibration haptic"),
     SettingsEntry("Cipher", "Experimental", "experimental_settings", "player script signature refresh"),
     SettingsEntry("Playback diagnostics", "Experimental", "experimental_settings", "logs potoken stream client debug"),
     SettingsEntry("Repeat initial setup", "Experimental", "experimental_settings", "onboarding wizard setup"),
