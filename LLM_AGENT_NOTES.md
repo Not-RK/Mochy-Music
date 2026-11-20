@@ -13,7 +13,9 @@
 | :--- | :--- | :--- |
 | **App Name** | **Mochy Music** | Fork of Metrolist / ViMusic with modular engine |
 | **Active Base Version** | **v8.4.3 (build#1280, versionCode 73)** | Tag `mochy-8.4.3` on commit `a5bc898b` |
-| **Active Git Branch** | `clean-v8.4.2.2` | Aligned with official `origin/main` / `mochy-8.4.3` |
+| **Active Git Branch** | `clean-v8.4.2.2` | Aligned with official `mochy-8.4.3` |
+| **Personal Private Fork** | **`https://github.com/Not-RK/Mochy-Music`** | 100% PRIVATE repo for cloud builds |
+| **Cloud CI/CD** | **GitHub Actions (`cloud_build.yml`)** | Free cloud build runners (zero local disk/CPU usage) |
 | **Local Project Path** | `C:\Users\Rohan\Documents\Antigravity\Mochy-Music` | Root repository |
 | **JDK 21 Path** | `C:\Users\Rohan\Documents\Antigravity\jdk-21\jdk-21.0.6+7` | Required for Gradle daemon |
 | **Android SDK Path** | `C:\Users\Rohan\Documents\Antigravity\android-sdk` | Platforms 36 & 37 installed |
