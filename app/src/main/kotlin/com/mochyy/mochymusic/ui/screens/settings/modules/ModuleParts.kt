@@ -45,6 +45,7 @@ import com.mochyy.mochymusic.R
 import com.mochyy.mochymusic.module.AccountState
 import com.mochyy.mochymusic.module.ModuleFeature
 import com.mochyy.mochymusic.module.applemusic.AppleMusicModule
+import com.mochyy.mochymusic.module.deezer.DeezerModule
 import com.mochyy.mochymusic.module.monochrome.MonochromeModule
 import com.mochyy.mochymusic.modules.ModuleEntry
 import com.mochyy.mochymusic.modules.ModuleOrigin
@@ -63,6 +64,7 @@ internal val StatusTrouble = Color(0xFFFFB340)
 private fun logoFor(id: String): Int? = when (id) {
     AppleMusicModule.Id -> R.drawable.provider_apple_music
     MonochromeModule.Id -> R.drawable.provider_monochrome
+    DeezerModule.Id -> R.drawable.provider_deezer
     else -> null
 }
 

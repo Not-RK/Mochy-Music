@@ -50,6 +50,7 @@ import com.mochyy.mochymusic.module.AccountState
 import com.mochyy.mochymusic.module.ModuleFeature
 import com.mochyy.mochymusic.module.jiosaavn.JioSaavnModule
 import com.mochyy.mochymusic.module.applemusic.AppleMusicModule
+import com.mochyy.mochymusic.module.deezer.DeezerModule
 import com.mochyy.mochymusic.module.monochrome.MonochromeModule
 import com.mochyy.mochymusic.modules.SourceModules
 import com.mochyy.mochymusic.viewmodels.ModulesViewModel
@@ -131,6 +132,7 @@ fun AudioQualityScreen(navController: NavController, modules: ModulesViewModel =
             val pick = entries.firstOrNull { it.id == first }?.picks?.get(JioSaavnModule.ChoiceQuality) ?: JioSaavnModule.Option320
             Effective(if (pick == JioSaavnModule.Option96) AudioQuality.MEDIUM else AudioQuality.HIGH, "JioSaavn", "AAC $pick")
         }
+        DeezerModule.Id -> Effective(AudioQuality.LOSSLESS, "Deezer", "FLAC · lossless")
         SourceModules.YouTubeId -> {
             val tier = if (quality == AudioQuality.AUTO) (if (metered) AudioQuality.MEDIUM else AudioQuality.HIGH) else quality
             val option = YouTubeOptions.first { it.quality == tier }
@@ -183,6 +185,8 @@ fun AudioQualityScreen(navController: NavController, modules: ModulesViewModel =
                     }
                 } else if (id == MonochromeModule.Id) {
                     QualityRow(stringResource(R.string.aq_quality_lossless), stringResource(R.string.aq_desc_monochrome_lossless), selected = true, enabled = active) {}
+                } else if (id == DeezerModule.Id) {
+                    QualityRow(stringResource(R.string.aq_quality_lossless), "Lossless FLAC & 320kbps MP3 stream", selected = true, enabled = active) {}
                 }
                 LabTextAction(stringResource(R.string.aq_module_settings, entry.module.info.name), R.drawable.navigate_next) {
                     navController.navigate(com.mochyy.mochymusic.ui.screens.settings.modules.moduleRoute(id))
@@ -270,6 +274,7 @@ private fun Footnote(text: String) {
 internal fun providerLogo(id: String): Int? = when (id) {
     AppleMusicModule.Id -> R.drawable.provider_apple_music
     MonochromeModule.Id -> R.drawable.provider_monochrome
+    DeezerModule.Id -> R.drawable.provider_deezer
     SourceModules.YouTubeId -> R.drawable.provider_youtube_music
     else -> null
 }

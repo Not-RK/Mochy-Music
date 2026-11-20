@@ -218,6 +218,7 @@ private fun equalizerStatus(eq: EqSettings, userPresets: Map<String, String>): S
 private fun qualityName(q: AudioQuality, firstProvider: String?): String = when (firstProvider) {
     com.mochyy.mochymusic.module.monochrome.MonochromeModule.Id -> stringResource(R.string.lab_quality_monochrome)
     com.mochyy.mochymusic.module.applemusic.AppleMusicModule.Id -> stringResource(R.string.lab_quality_apple_music)
+    com.mochyy.mochymusic.module.deezer.DeezerModule.Id -> stringResource(R.string.lab_quality_deezer)
     else -> stringResource(
         R.string.lab_quality_youtube,
         stringResource(
@@ -392,7 +393,8 @@ private fun BoxScope.FxSketch(active: Boolean) {
 @Composable
 private fun BoxScope.QualitySketch(quality: AudioQuality, firstProvider: String?) {
     val fine = when {
-        firstProvider == com.mochyy.mochymusic.module.monochrome.MonochromeModule.Id -> 1f
+        firstProvider == com.mochyy.mochymusic.module.monochrome.MonochromeModule.Id ||
+            firstProvider == com.mochyy.mochymusic.module.deezer.DeezerModule.Id -> 1f
         firstProvider == com.mochyy.mochymusic.module.applemusic.AppleMusicModule.Id -> 0.65f
         quality == AudioQuality.LOW -> 0f
         quality == AudioQuality.MEDIUM -> 0.35f

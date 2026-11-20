@@ -13,6 +13,7 @@
     <string name="lab_transition_manual">Manual</string>
     <string name="lab_transition_crossmix">CrossMix</string>
     <string name="lab_quality_monochrome">Monochrome · Lossless</string>
+    <string name="lab_quality_deezer">Deezer · Lossless</string>
     <string name="lab_quality_apple_music">Apple Music · AAC</string>
     <string name="lab_quality_youtube">YouTube · %1$s</string>
     <string name="lab_quality_low">Low</string>

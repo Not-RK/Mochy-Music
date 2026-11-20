@@ -457,6 +457,7 @@ dependencies {
     implementation(project(":modules:applemusic"))
     implementation(project(":modules:monochrome"))
     implementation(project(":modules:jiosaavn"))
+    implementation(project(":modules:deezer"))
     implementation(project(":modules:bridge"))
 
 
