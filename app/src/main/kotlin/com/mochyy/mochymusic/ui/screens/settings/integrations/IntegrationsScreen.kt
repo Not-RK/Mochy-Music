@@ -41,18 +41,6 @@ fun IntegrationsScreen(navController: NavController) {
                 onClick = { navController.navigate(DiscordRoute) },
             )
             IntegrationRow(
-                name = ScrobbleSite.LASTFM.label,
-                description = stringResource(R.string.integration_scrobbling_desc, ScrobbleSite.LASTFM.label),
-                icon = R.drawable.integration_lastfm,
-                onClick = { navController.navigate(scrobbleServiceRoute(ScrobbleSite.LASTFM)) },
-            )
-            IntegrationRow(
-                name = ScrobbleSite.LIBREFM.label,
-                description = stringResource(R.string.integration_scrobbling_desc, ScrobbleSite.LIBREFM.label),
-                icon = R.drawable.integration_librefm,
-                onClick = { navController.navigate(scrobbleServiceRoute(ScrobbleSite.LIBREFM)) },
-            )
-            IntegrationRow(
                 name = stringResource(R.string.module_youtube_name),
                 description = stringResource(R.string.module_youtube_desc),
                 icon = R.drawable.provider_youtube_music,

@@ -566,7 +566,7 @@ class ModuleRegistry @Inject constructor(
     // ---- loading --------------------------------------------------------------------------------
 
     private fun load(): List<Pair<MochyModule, ModuleOrigin>> {
-        val builtIn = listOf<MochyModule>(AppleMusicModule(), MonochromeModule(), JioSaavnModule(), DeezerModule()).map { it to ModuleOrigin.BuiltIn }
+        val builtIn = listOf<MochyModule>(MonochromeModule(), DeezerModule()).map { it to ModuleOrigin.BuiltIn }
         val apps = discover()
         val savedCode = savedCodeModules()
         CodeModules.tidy(context, savedCode.map { it.optString("folder") }.toSet())
