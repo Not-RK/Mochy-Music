@@ -1,4 +1,4 @@
-name: Build Mochy Release APK
+name: Build Mochy Resona Release
 
 on:
   workflow_dispatch:
@@ -59,26 +59,26 @@ jobs:
       - name: Prepare APK and Notes
         run: |
           cd app/build/outputs/apk/arm64Foss/release
-          cp app-arm64-foss-release.apk Mochy-Music-v8.4.3-arm64-Deezer.apk || cp *.apk Mochy-Music-v8.4.3-arm64-Deezer.apk
+          cp app-arm64-foss-release.apk Mochy-Resona-v8.4.3-arm64.apk || cp *.apk Mochy-Resona-v8.4.3-arm64.apk
           cat << 'EOF' > release_notes.md
-          ## 🎵 Mochy Music v8.4.3 - Deezer Edition
-          Official Upstream Sync + Lossless Deezer + Jitter-Free Audio
+          ## ✨ Mochy Resona v8.4.3
+          Official Upstream Sync + Lossless Audio + Jitter-Free Playback
 
-          ### ✨ What's Included:
+          ### ⚡ Features in this Build:
           - **Upstream v8.4.3 Sync**: Exact parity with official upstream release (tag `mochy-8.4.3`, commit `a5bc898b`).
-          - **Native Deezer Source Module**: Native FLAC (lossless) & 320kbps MP3 streaming with Blowfish CBC 2048-byte stripe decryption and local stream loopback server.
-          - **Geo-Unblock Proxy Support**: Built-in selectable proxies (UK 1, UK 2, RU 1, RU 2, MD) enabling Deezer streaming in unsupported countries like India.
-          - **Micro-Stutter / Audio Jitter Fix**: Stripped heavy debug logging and logcat spam for smooth background playback.
-          - **Minimal Default Setup**: Default modules are **Monochrome** and **Deezer** only.
-          - **Cleaned Integrations**: Removed non-working Last.fm & Libre.fm rows from the Integrations UI.
-          - **Architecture**: `arm64-v8a` (Optimized for modern Android devices).
+          - **Native Lossless Stream Module (`:modules:deezer`)**: Integrated Blowfish CBC 2048-byte stripe decryption for genuine FLAC (1411kbps) and 320kbps MP3 streaming.
+          - **Regional Geo-Unblock**: Selectable proxies (UK 1, UK 2, RU, MD) unblocking playback in unsupported regions (e.g. India).
+          - **Zero-Jitter Polish**: Stripped verbose logcat flooding and Timber debug trees to eliminate playback stutters.
+          - **Minimal & Clean Defaults**: Streamlined default modules to Monochrome and Deezer only.
+          - **Cleaned Integrations**: Removed non-functional Last.fm and Libre.fm UI rows.
+          - **Architecture**: `arm64-v8a` (Android 8.0+).
           EOF
 
       - name: Upload Arm64 Release Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mochy-Music-v8.4.3-arm64-Deezer
-          path: app/build/outputs/apk/arm64Foss/release/Mochy-Music-v8.4.3-arm64-Deezer.apk
+          name: Mochy-Resona-v8.4.3-arm64
+          path: app/build/outputs/apk/arm64Foss/release/Mochy-Resona-v8.4.3-arm64.apk
           retention-days: 30
 
       - name: Publish GitHub Release
@@ -86,8 +86,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd app/build/outputs/apk/arm64Foss/release
-          gh release create "v8.4.3-deezer" \
-            Mochy-Music-v8.4.3-arm64-Deezer.apk \
-            --title "Mochy Music v8.4.3 (Deezer Edition)" \
+          gh release create "v8.4.3-resona" \
+            Mochy-Resona-v8.4.3-arm64.apk \
+            --title "Mochy Resona v8.4.3" \
             --notes-file release_notes.md \
             --clobber
