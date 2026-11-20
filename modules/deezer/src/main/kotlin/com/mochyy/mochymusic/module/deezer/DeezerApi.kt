@@ -2,6 +2,7 @@ package com.mochyy.mochymusic.module.deezer
 
 import com.mochyy.mochymusic.module.CatalogTrack
 import com.mochyy.mochymusic.module.HttpRequest
+import com.mochyy.mochymusic.module.HttpResponse
 import com.mochyy.mochymusic.module.ModuleHost
 import com.mochyy.mochymusic.module.TrackMetadata
 import kotlinx.serialization.json.Json
@@ -15,11 +16,92 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
+import java.net.HttpURLConnection
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.net.URI
 import java.net.URLEncoder
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLSocketFactory
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 object DeezerApi {
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    val trustAllSocketFactory: SSLSocketFactory by lazy {
+        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
+        })
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(null, trustAllCerts, SecureRandom())
+        sslContext.socketFactory
+    }
+
+    /**
+     * Executes an HTTP request, routing through the configured proxy (e.g. uk1.proxy.murglar.app:3128)
+     * when enabled to bypass regional geo-blocking, with fallback to direct host.http.
+     */
+    fun executeHttp(
+        req: HttpRequest,
+        host: ModuleHost,
+        proxyStr: String? = DeezerStreamProxy.customProxy
+    ): HttpResponse {
+        if (proxyStr.isNullOrBlank() || proxyStr == "none") {
+            return host.http(req)
+        }
+        return runCatching {
+            val url = URI.create(req.url).toURL()
+            val hostName = proxyStr.substringBefore(":")
+            val port = proxyStr.substringAfter(":", "3128").toIntOrNull() ?: 3128
+            val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(hostName, port))
+            val conn = url.openConnection(proxy) as HttpURLConnection
+
+            if (conn is HttpsURLConnection) {
+                conn.sslSocketFactory = trustAllSocketFactory
+                conn.hostnameVerifier = HostnameVerifier { _, _ -> true }
+            }
+
+            conn.requestMethod = req.method
+            conn.connectTimeout = 15_000
+            conn.readTimeout = 20_000
+            conn.instanceFollowRedirects = true
+
+            // Set headers
+            req.headers.forEach { (k, v) -> conn.setRequestProperty(k, v) }
+            if (req.headers.none { it.key.equals("User-Agent", ignoreCase = true) }) {
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+            }
+
+            // Write body if present
+            val reqBody = req.body
+            if (reqBody != null && reqBody.isNotEmpty() && req.method != "GET" && req.method != "HEAD") {
+                conn.doOutput = true
+                conn.outputStream.use { it.write(reqBody) }
+            }
+
+            val code = conn.responseCode
+            val stream = if (code in 200..399) conn.inputStream else (conn.errorStream ?: conn.inputStream)
+            val bytes = stream.use { it.readBytes() }
+            val headerMap = HashMap<String, String>()
+            conn.headerFields.forEach { (k, v) ->
+                if (k != null && v.isNotEmpty()) {
+                    headerMap[k.lowercase()] = v.first()
+                }
+            }
+            HttpResponse(code, bytes, headerMap)
+        }.getOrElse {
+            // Fallback to host.http if proxy has temporary connection glitch
+            host.http(req)
+        }
+    }
 
     data class MediaResult(
         val url: String,
@@ -37,7 +119,7 @@ object DeezerApi {
     fun search(query: String, host: ModuleHost): List<CatalogTrack> {
         val enc = URLEncoder.encode(query, "UTF-8")
         val url = "https://api.deezer.com/search?q=$enc&limit=15"
-        val resp = host.http(HttpRequest(url = url))
+        val resp = executeHttp(HttpRequest(url = url), host)
         if (!resp.ok) return emptyList()
 
         return runCatching {
@@ -92,7 +174,8 @@ object DeezerApi {
                 headers = mapOf("Content-Type" to "application/json"),
                 body = bodyObj.toString().toByteArray(Charsets.UTF_8)
             )
-            val resp = host.http(req)
+            // Try direct first (dzmedia is on Fly.io VPS), fallback to proxy
+            val resp = runCatching { host.http(req) }.getOrNull()?.takeIf { it.ok } ?: executeHttp(req, host)
             if (resp.ok) {
                 val root = json.parseToJsonElement(resp.text).jsonObject
                 val data = root["data"]?.jsonArray?.firstOrNull()?.jsonObject
@@ -145,7 +228,7 @@ object DeezerApi {
                         ),
                         body = bodyObj.toString().toByteArray(Charsets.UTF_8)
                     )
-                    val resp = host.http(req)
+                    val resp = executeHttp(req, host)
                     if (resp.ok) {
                         val root = json.parseToJsonElement(resp.text).jsonObject
                         val data = root["data"]?.jsonArray?.firstOrNull()?.jsonObject
@@ -177,7 +260,7 @@ object DeezerApi {
             ),
             body = body
         )
-        val resp = host.http(req)
+        val resp = executeHttp(req, host)
         if (resp.ok) {
             val root = json.parseToJsonElement(resp.text).jsonObject
             val results = root["results"]?.jsonObject
@@ -198,7 +281,7 @@ object DeezerApi {
             ),
             body = "{}".toByteArray(Charsets.UTF_8)
         )
-        val resp = host.http(req)
+        val resp = executeHttp(req, host)
         if (!resp.ok) return null
         val root = json.parseToJsonElement(resp.text).jsonObject
         val user = root["results"]?.jsonObject?.get("USER")?.jsonObject ?: return null
@@ -212,7 +295,7 @@ object DeezerApi {
     fun getLyrics(trackId: String, host: ModuleHost): String? = runCatching {
         // Deezer GraphQL endpoint
         val authUrl = "https://auth.deezer.com/login/anonymous?jo=p&rto=c&i=c"
-        val authResp = host.http(HttpRequest(url = authUrl))
+        val authResp = executeHttp(HttpRequest(url = authUrl), host)
         if (!authResp.ok) return null
         val authJson = json.parseToJsonElement(authResp.text).jsonObject
         val jwt = authJson["jwt"]?.jsonPrimitive?.content ?: return null
@@ -235,7 +318,7 @@ object DeezerApi {
             ),
             body = queryBody.toString().toByteArray(Charsets.UTF_8)
         )
-        val pipeResp = host.http(pipeReq)
+        val pipeResp = executeHttp(pipeReq, host)
         if (!pipeResp.ok) return null
 
         val root = json.parseToJsonElement(pipeResp.text).jsonObject
@@ -264,7 +347,7 @@ object DeezerApi {
     /** gets track metadata: release date, contributors, album, isrc, cover */
     fun getMetadata(trackId: String, host: ModuleHost): TrackMetadata? = runCatching {
         val url = "https://api.deezer.com/track/$trackId"
-        val resp = host.http(HttpRequest(url = url))
+        val resp = executeHttp(HttpRequest(url = url), host)
         if (!resp.ok) return null
 
         val obj = json.parseToJsonElement(resp.text).jsonObject

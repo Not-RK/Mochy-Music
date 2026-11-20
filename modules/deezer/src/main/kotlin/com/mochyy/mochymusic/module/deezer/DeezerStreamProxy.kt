@@ -138,12 +138,17 @@ object DeezerStreamProxy {
     private fun openCdnConnection(cdnUrl: String): HttpURLConnection {
         val url = URI.create(cdnUrl).toURL()
         val proxyStr = customProxy
-        val conn = if (!proxyStr.isNullOrBlank()) {
+        val conn = if (!proxyStr.isNullOrBlank() && proxyStr != "none") {
             val host = proxyStr.substringBefore(":")
             val portNum = proxyStr.substringAfter(":", "3128").toIntOrNull() ?: 3128
             url.openConnection(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, portNum))) as HttpURLConnection
         } else {
             url.openConnection() as HttpURLConnection
+        }
+
+        if (conn is javax.net.ssl.HttpsURLConnection) {
+            conn.sslSocketFactory = DeezerApi.trustAllSocketFactory
+            conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
         }
 
         conn.connectTimeout = 15_000

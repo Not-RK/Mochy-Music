@@ -64,8 +64,8 @@ class DeezerModule : SourceModule, LyricsModule, MetadataModule, ModuleFields {
         this.host = host
         arl = host.storage.get(FieldArl).orEmpty()
         quality = host.storage.get(FieldQuality)?.ifBlank { "flac" } ?: "flac"
-        proxy = host.storage.get(FieldProxy).orEmpty()
-        DeezerStreamProxy.customProxy = proxy.ifBlank { null }
+        proxy = host.storage.get(FieldProxy)?.ifBlank { "uk1.proxy.murglar.app:3128" } ?: "uk1.proxy.murglar.app:3128"
+        DeezerStreamProxy.customProxy = if (proxy == "none") null else proxy
         DeezerStreamProxy.ensureStarted()
     }
 
@@ -91,11 +91,18 @@ class DeezerModule : SourceModule, LyricsModule, MetadataModule, ModuleFields {
         ),
         ModuleField(
             id = FieldProxy,
-            label = "Deezer Proxy Host:Port",
-            kind = FieldKind.Text,
-            hint = "e.g. uk1.proxy.murglar.app:3128",
-            default = "",
-            description = "Custom HTTP proxy for Deezer API and streaming if region restricted"
+            label = "Deezer Proxy (Geo-Unblock)",
+            kind = FieldKind.Select,
+            options = listOf(
+                StreamOption("uk1.proxy.murglar.app:3128", "UK 1 (uk1.proxy.murglar.app)", "Fast UK Proxy (Echo extension default, unblocks Deezer)"),
+                StreamOption("uk2.proxy.murglar.app:3128", "UK 2 (uk2.proxy.murglar.app)", "Secondary UK Proxy"),
+                StreamOption("ru1.proxy.murglar.app:3128", "RU 1 (ru1.proxy.murglar.app)", "Russian Proxy 1"),
+                StreamOption("ru2.proxy.murglar.app:3128", "RU 2 (ru2.proxy.murglar.app)", "Russian Proxy 2"),
+                StreamOption("md.proxy.murglar.app:3128", "MD (md.proxy.murglar.app)", "Moldova Proxy"),
+                StreamOption("none", "Direct (No Proxy)", "Direct connection (only if Deezer is supported in your region)")
+            ),
+            default = "uk1.proxy.murglar.app:3128",
+            description = "Workable proxies from Echo Deezer extension to bypass regional blocks in unsupported countries"
         )
     )
 
@@ -111,7 +118,7 @@ class DeezerModule : SourceModule, LyricsModule, MetadataModule, ModuleFields {
         values[FieldProxy]?.let {
             proxy = it.trim()
             host.storage.set(FieldProxy, proxy)
-            DeezerStreamProxy.customProxy = proxy.ifBlank { null }
+            DeezerStreamProxy.customProxy = if (proxy == "none" || proxy.isBlank()) null else proxy
         }
     }
 
