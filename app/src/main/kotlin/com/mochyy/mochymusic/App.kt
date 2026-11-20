@@ -80,9 +80,10 @@ class App : Application(), SingletonImageLoader.Factory {
 
         CipherDeobfuscator.initialize(this)
 
-        if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "fast") {
-            Timber.plant(Timber.DebugTree())
-        }
+        // Debug logging disabled to prevent logcat jitter and micro-stutters
+        // if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "fast") {
+        //     Timber.plant(Timber.DebugTree())
+        // }
 
         PreferencesCache.start(this, applicationScope)
         // tokens saved before the vault existed are sealed on the first start after the update
