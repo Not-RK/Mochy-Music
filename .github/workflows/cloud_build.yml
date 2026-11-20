@@ -62,7 +62,7 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096M -Dkotlin.daemon.jvm.options=-Xmx4096M -XX:+UseParallelGC"
         run: |
-          ./gradlew :app:assembleArm64FossRelease -x lint -x lintVitalAnalyzeArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
+          ./gradlew :app:assembleArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
 
       - name: Prepare Arm64 APK
         run: |
