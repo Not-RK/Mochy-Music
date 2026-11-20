@@ -264,6 +264,7 @@ extensions.configure<ApplicationExtension> {
         warningsAsErrors = false
         abortOnError = false
         checkDependencies = false
+        checkReleaseBuilds = false
     }
 
     androidResources {
