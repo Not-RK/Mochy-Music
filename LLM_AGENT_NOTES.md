@@ -5,16 +5,25 @@
 > **READ THIS DOCUMENT FIRST BEFORE SCANNING THE REPO OR FETCHING COMMITS.**
 > This file contains the complete, verified state of this repository. Reading this document saves 30,000+ tokens per session by eliminating redundant file exploration, dependency discovery, and architectural analysis.
 
+> [!CAUTION]
+> ### 🛑 HARD RULE FOR ALL AI AGENTS: NEVER USE LOCAL RESOURCES FOR COMPILATION
+> **DO NOT run local Gradle build commands (`assemble*`, `assembleArm64FossRelease`, etc.) or Gradle daemons on the user's local machine.**
+> - **Reason**: The user has strictly constrained local disk storage (~free space) and RAM. Local Android compilation creates multi-gigabyte build artifacts (`.gradle/`, `app/build/`) and spawns heavy memory daemons.
+> - **Mandatory Build Method**: **ALWAYS use GitHub Actions for compilation.**
+>   - Trigger cloud builds by pushing to `clean-v8.4.2.2` or triggering `gh workflow run cloud_build.yml --repo Not-RK/Mochy-Music`.
+>   - GitHub Actions executes in isolated Ubuntu cloud runners, packages `Mochy-Resona-v8.4.3-arm64.apk` and `Mochy-Resona-v8.4.3-universal.apk`, and uploads them directly to GitHub Releases.
+>   - **Zero local CPU, zero local RAM, and zero local disk space are consumed.**
+
 ---
 
 ## 1. Project & Environment Snapshot
 
 | Parameter | Current Value | Notes |
 | :--- | :--- | :--- |
-| **App Name** | **Mochy Music** | Fork of Metrolist / ViMusic with modular engine |
+| **App Name** | **Mochy Resona** | Refined, vibecoded edition of Mochy Music |
 | **Active Base Version** | **v8.4.3 (build#1280, versionCode 73)** | Tag `mochy-8.4.3` on commit `a5bc898b` |
 | **Active Git Branch** | `clean-v8.4.2.2` | Aligned with official `mochy-8.4.3` |
-| **Personal Private Fork** | **`https://github.com/Not-RK/Mochy-Music`** | 100% PRIVATE repo for cloud builds |
+| **Public Fork** | **`https://github.com/Not-RK/Mochy-Music`** | Public GitHub repository |
 | **Cloud CI/CD** | **GitHub Actions (`cloud_build.yml`)** | Free cloud build runners (zero local disk/CPU usage) |
 | **Local Project Path** | `C:\Users\Rohan\Documents\Antigravity\Mochy-Music` | Root repository |
 | **JDK 21 Path** | `C:\Users\Rohan\Documents\Antigravity\jdk-21\jdk-21.0.6+7` | Required for Gradle daemon |
@@ -143,13 +152,14 @@ In `app/src/main/kotlin/com/mochyy/mochymusic/ui/screens/settings/integrations/I
    Do NOT write verbose Javadoc/LLM-style headers (`/** This function handles... */`).
 4. **PopupSheet Contract**:
    Always use `PopupSheet` via `LocalMenuState.current` or `LocalBottomSheetPageState.current`. Sheets animate with spring physics (`PopupSpring`) and capped at ~86% screen height. Full-screen blur is avoided for GPU fill-rate performance.
-5. **Standard Verification & Build Commands**:
-   - Quick compile check:
-     ```powershell
-     .\gradlew.bat :app:compileArm64FossDebugKotlin
+5. **Standard Verification & Cloud Build Protocol**:
+   - **Local Rule**: NEVER run `assembleRelease` locally.
+   - **Cloud Build via GitHub Actions**:
+     Push changes to `clean-v8.4.2.2` or trigger via GitHub CLI:
+     ```bash
+     gh workflow run cloud_build.yml --repo Not-RK/Mochy-Music
      ```
-   - Release APK build:
-     ```powershell
-     .\gradlew.bat :app:assembleArm64FossRelease
-     ```
-     Output path: `app/build/outputs/apk/arm64Foss/release/app-arm64-foss-release.apk`
+     Cloud runner automatically builds:
+     - `Mochy-Resona-v8.4.3-arm64.apk`
+     - `Mochy-Resona-v8.4.3-universal.apk`
+     and publishes them to the latest GitHub Release `v8.4.3-resona`.
