@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build_release:
-    name: Build Arm64 & Universal Release APKs
+  build_arm64:
+    name: Build Arm64 Release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,68 +50,94 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Build Arm64 & Universal FOSS Release APKs
+      - name: Build Arm64 FOSS Release APK
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3584M -Dkotlin.daemon.jvm.options=-Xmx2048M -XX:+UseParallelGC -Dorg.gradle.workers.max=2"
         run: |
-          ./gradlew :app:assembleArm64FossRelease :app:assembleUniversalFossRelease --no-configuration-cache --console=plain --warning-mode summary
+          ./gradlew :app:assembleArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
 
-      - name: Prepare APKs and Notes
+      - name: Prepare Arm64 APK
         run: |
-          mkdir -p release_apks
-          
-          # Copy and rename Arm64 APK
-          ARM64_APK=$(find app/build/outputs/apk/arm64Foss/release -name "*.apk" | head -n 1)
-          if [ -n "$ARM64_APK" ]; then
-            cp "$ARM64_APK" release_apks/Mochy-Resona-v8.4.3-arm64.apk
-          fi
+          cd app/build/outputs/apk/arm64Foss/release
+          cp *.apk Mochy-Resona-v8.4.3-arm64.apk
 
-          # Copy and rename Universal APK
-          UNI_APK=$(find app/build/outputs/apk/universalFoss/release -name "*.apk" | head -n 1)
-          if [ -n "$UNI_APK" ]; then
-            cp "$UNI_APK" release_apks/Mochy-Resona-v8.4.3-universal.apk
-          fi
-
-          cat << 'EOF' > release_notes.md
-          ## ✨ Mochy Resona v8.4.3
-          Official Upstream Sync + Lossless Audio + Jitter-Free Playback
-
-          ### 📦 Download Options:
-          - **`Mochy-Resona-v8.4.3-arm64.apk`** *(Recommended)*: For almost all modern Android phones & tablets (64-bit ARM, smaller file size ~33 MB).
-          - **`Mochy-Resona-v8.4.3-universal.apk`**: Universal build containing all architectures (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) for older tablets, 32-bit devices, and Android emulators.
-
-          ---
-
-          ### ⚡ Features in this Build:
-          - **Upstream v8.4.3 Sync**: Exact parity with official upstream release (tag `mochy-8.4.3`, commit `a5bc898b`).
-          - **Native Lossless Stream Module (`:modules:deezer`)**: Integrated Blowfish CBC 2048-byte stripe decryption for genuine FLAC (1411kbps) and 320kbps MP3 streaming.
-          - **Regional Geo-Unblock**: Selectable proxies (UK 1, UK 2, RU, MD) unblocking playback in unsupported regions (e.g. India).
-          - **Zero-Jitter Polish**: Stripped verbose logcat flooding and Timber debug trees to eliminate playback stutters.
-          - **Minimal & Clean Defaults**: Streamlined default modules to Monochrome and Deezer only.
-          - **Cleaned Integrations**: Removed non-functional Last.fm and Libre.fm UI rows.
-
-          ---
-
-          ### 🎧 How to Configure Deezer (FLAC Quality):
-          1. Go to **Settings → Modules → Deezer**.
-          2. **ARL Cookie for FLAC**: Paste your Deezer `arl` cookie into the ARL token field to unlock genuine Hi-Fi Lossless (FLAC 1411 kbps) quality streaming.
-          3. **Regional Proxy**: If you are in India or an unsupported region, select a proxy from the dropdown (e.g. `UK 1` or `UK 2`).
-          4. Set **Deezer** as your active source and enjoy uncompressed lossless audio!
-          EOF
-
-      - name: Upload Release Artifacts
+      - name: Upload Arm64 Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Mochy-Resona-v8.4.3-APKs
-          path: release_apks/*.apk
+          name: Mochy-Resona-v8.4.3-arm64
+          path: app/build/outputs/apk/arm64Foss/release/Mochy-Resona-v8.4.3-arm64.apk
           retention-days: 30
 
-      - name: Publish / Update GitHub Release
+      - name: Publish Arm64 to GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "v8.4.3-resona" release_apks/*.apk --clobber || \
-          gh release create "v8.4.3-resona" release_apks/*.apk \
-            --title "Mochy Resona v8.4.3" \
-            --notes-file release_notes.md \
-            --clobber
+          cd app/build/outputs/apk/arm64Foss/release
+          gh release upload "v8.4.3-resona" Mochy-Resona-v8.4.3-arm64.apk --clobber || \
+          gh release create "v8.4.3-resona" Mochy-Resona-v8.4.3-arm64.apk --title "Mochy Resona v8.4.3" --clobber
+
+  build_universal:
+    name: Build Universal Release APK
+    runs-on: ubuntu-latest
+    needs: build_arm64
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: false
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Accept Android SDK Licenses
+        run: |
+          mkdir -p "$ANDROID_HOME/licenses" || true
+          echo -e "\n24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
+      - name: Generate Keystore for Signing
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Build Universal FOSS Release APK
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3584M -Dkotlin.daemon.jvm.options=-Xmx2048M -XX:+UseParallelGC -Dorg.gradle.workers.max=2"
+        run: |
+          ./gradlew :app:assembleUniversalFossRelease --no-configuration-cache --console=plain --warning-mode summary
+
+      - name: Prepare Universal APK
+        run: |
+          cd app/build/outputs/apk/universalFoss/release
+          cp *.apk Mochy-Resona-v8.4.3-universal.apk
+
+      - name: Upload Universal Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mochy-Resona-v8.4.3-universal
+          path: app/build/outputs/apk/universalFoss/release/Mochy-Resona-v8.4.3-universal.apk
+          retention-days: 30
+
+      - name: Publish Universal to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd app/build/outputs/apk/universalFoss/release
+          gh release upload "v8.4.3-resona" Mochy-Resona-v8.4.3-universal.apk --clobber
