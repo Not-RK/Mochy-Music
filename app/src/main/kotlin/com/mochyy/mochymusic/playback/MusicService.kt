@@ -1421,7 +1421,6 @@ class MusicService :
         val wantsFloat = dataStore.data.map { prefs ->
             (prefs[HiResOutputKey] ?: false) &&
                 !(prefs[SkipSilenceKey] ?: false) &&
-                !(prefs[MusicHapticsEnabledKey] ?: false) &&
                 prefs[TransportEffectKey].toEnum(TransportEffect.OFF) == TransportEffect.OFF &&
                 transitionModeOf(prefs) != CrossmixMode.CROSSMIX
         }
