@@ -73,8 +73,11 @@
 
 ## 📥 Installation
 
-1. Grab the latest APK from **[Releases](https://github.com/Not-RK/Mochy-Music/releases/latest)** (`Mochy-Resona-*.apk`).
-2. Install on Android 8.0+.
+1. Go to the **[Latest Release](https://github.com/Not-RK/Mochy-Music/releases/latest)** page.
+2. Choose your APK:
+   - **`Mochy-Resona-v8.4.3-arm64.apk`** *(Recommended)*: For 99% of modern phones and tablets (~33 MB).
+   - **`Mochy-Resona-v8.4.3-universal.apk`**: Compatible with all devices including older tablets, 32-bit phones, and emulators.
+3. Open and install on Android 8.0+.
 
 ---
 

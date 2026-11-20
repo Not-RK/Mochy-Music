@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build_release:
-    name: Build Arm64 Release APK
+    name: Build Arm64 & Universal Release APKs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,19 +50,37 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
-      - name: Build Arm64 FOSS Release APK
+      - name: Build Arm64 & Universal FOSS Release APKs
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3584M -Dkotlin.daemon.jvm.options=-Xmx2048M -XX:+UseParallelGC -Dorg.gradle.workers.max=2"
         run: |
-          ./gradlew :app:assembleArm64FossRelease --no-configuration-cache --console=plain --warning-mode summary
+          ./gradlew :app:assembleArm64FossRelease :app:assembleUniversalFossRelease --no-configuration-cache --console=plain --warning-mode summary
 
-      - name: Prepare APK and Notes
+      - name: Prepare APKs and Notes
         run: |
-          cd app/build/outputs/apk/arm64Foss/release
-          cp app-arm64-foss-release.apk Mochy-Resona-v8.4.3-arm64.apk || cp *.apk Mochy-Resona-v8.4.3-arm64.apk
+          mkdir -p release_apks
+          
+          # Copy and rename Arm64 APK
+          ARM64_APK=$(find app/build/outputs/apk/arm64Foss/release -name "*.apk" | head -n 1)
+          if [ -n "$ARM64_APK" ]; then
+            cp "$ARM64_APK" release_apks/Mochy-Resona-v8.4.3-arm64.apk
+          fi
+
+          # Copy and rename Universal APK
+          UNI_APK=$(find app/build/outputs/apk/universalFoss/release -name "*.apk" | head -n 1)
+          if [ -n "$UNI_APK" ]; then
+            cp "$UNI_APK" release_apks/Mochy-Resona-v8.4.3-universal.apk
+          fi
+
           cat << 'EOF' > release_notes.md
           ## ✨ Mochy Resona v8.4.3
           Official Upstream Sync + Lossless Audio + Jitter-Free Playback
+
+          ### 📦 Download Options:
+          - **`Mochy-Resona-v8.4.3-arm64.apk`** *(Recommended)*: For almost all modern Android phones & tablets (64-bit ARM, smaller file size ~33 MB).
+          - **`Mochy-Resona-v8.4.3-universal.apk`**: Universal build containing all architectures (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) for older tablets, 32-bit devices, and Android emulators.
+
+          ---
 
           ### ⚡ Features in this Build:
           - **Upstream v8.4.3 Sync**: Exact parity with official upstream release (tag `mochy-8.4.3`, commit `a5bc898b`).
@@ -71,23 +89,29 @@ jobs:
           - **Zero-Jitter Polish**: Stripped verbose logcat flooding and Timber debug trees to eliminate playback stutters.
           - **Minimal & Clean Defaults**: Streamlined default modules to Monochrome and Deezer only.
           - **Cleaned Integrations**: Removed non-functional Last.fm and Libre.fm UI rows.
-          - **Architecture**: `arm64-v8a` (Android 8.0+).
+
+          ---
+
+          ### 🎧 How to Configure Deezer (FLAC Quality):
+          1. Go to **Settings → Modules → Deezer**.
+          2. **ARL Cookie for FLAC**: Paste your Deezer `arl` cookie into the ARL token field to unlock genuine Hi-Fi Lossless (FLAC 1411 kbps) quality streaming.
+          3. **Regional Proxy**: If you are in India or an unsupported region, select a proxy from the dropdown (e.g. `UK 1` or `UK 2`).
+          4. Set **Deezer** as your active source and enjoy uncompressed lossless audio!
           EOF
 
-      - name: Upload Arm64 Release Artifact
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Mochy-Resona-v8.4.3-arm64
-          path: app/build/outputs/apk/arm64Foss/release/Mochy-Resona-v8.4.3-arm64.apk
+          name: Mochy-Resona-v8.4.3-APKs
+          path: release_apks/*.apk
           retention-days: 30
 
-      - name: Publish GitHub Release
+      - name: Publish / Update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd app/build/outputs/apk/arm64Foss/release
-          gh release create "v8.4.3-resona" \
-            Mochy-Resona-v8.4.3-arm64.apk \
+          gh release upload "v8.4.3-resona" release_apks/*.apk --clobber || \
+          gh release create "v8.4.3-resona" release_apks/*.apk \
             --title "Mochy Resona v8.4.3" \
             --notes-file release_notes.md \
             --clobber
