@@ -5,25 +5,14 @@
 > **READ THIS DOCUMENT FIRST BEFORE SCANNING THE REPO OR FETCHING COMMITS.**
 > This file contains the complete, verified state of this repository. Reading this document saves 30,000+ tokens per session by eliminating redundant file exploration, dependency discovery, and architectural analysis.
 
-> [!IMPORTANT]
-> ### 🛑 COMPILATION PROTOCOL FOR AI AGENTS:
-> 1. **Default Method: ALWAYS prioritize GitHub Actions CI runners for compilation.**
->    - Trigger cloud builds by pushing to `clean-v8.4.2.2` or triggering `gh workflow run cloud_build.yml --repo Not-RK/Mochy-Music`.
->    - Saves user CPU, RAM, and disk.
-> 2. **Fallback Method: Immediate Local Shift on CI Failures or User Request.**
->    - If GitHub Actions encounters runner limits, queue delays, or CI errors, **immediately shift to local compilation**.
->    - The user has complete local toolchains verified and ready in `C:\Users\Rohan\Documents\Antigravity`:
->      - JDK 21: `C:\Users\Rohan\Documents\Antigravity\jdk-21\jdk-21.0.6+7`
->      - Android SDK: `C:\Users\Rohan\Documents\Antigravity\android-sdk`
->      - Gradle: `C:\Users\Rohan\Documents\Antigravity\gradle\gradle-9.3.1`
->      - Debug Keystore: `C:\Users\Rohan\.android\debug.keystore`
->    - Local compilation command:
->      ```powershell
->      $env:JAVA_HOME = "C:\Users\Rohan\Documents\Antigravity\jdk-21\jdk-21.0.6+7"
->      $env:ANDROID_HOME = "C:\Users\Rohan\Documents\Antigravity\android-sdk"
->      $env:PATH = "$env:JAVA_HOME\bin;C:\Users\Rohan\Documents\Antigravity\mingit\cmd;$env:PATH"
->      & "C:\Users\Rohan\Documents\Antigravity\gradle\gradle-9.3.1\bin\gradle.bat" :app:assembleArm64FossRelease --no-daemon
->      ```
+> [!CAUTION]
+> ### 🛑 HARD RULE FOR ALL AI AGENTS: NEVER USE LOCAL RESOURCES FOR COMPILATION
+> **DO NOT run local Gradle build commands (`assemble*`, `assembleArm64FossRelease`, etc.) or Gradle daemons on the user's local machine.**
+> - **Reason**: The user has strictly constrained local disk storage (~free space) and RAM. Local Android compilation creates multi-gigabyte build artifacts (`.gradle/`, `app/build/`) and spawns heavy memory daemons.
+> - **Mandatory Build Method**: **ALWAYS use GitHub Actions for compilation.**
+>   - Trigger cloud builds by pushing to `clean-v8.4.2.2` or triggering `gh workflow run cloud_build.yml --repo Not-RK/Mochy-Music`.
+>   - GitHub Actions executes in isolated Ubuntu cloud runners, packages `Mochy-Resona-v8.4.3-arm64.apk` and `Mochy-Resona-v8.4.3-universal.apk`, and uploads them directly to GitHub Releases.
+>   - **Zero local CPU, zero local RAM, and zero local disk space are consumed.**
 
 ---
 
